@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
-import { VictoryLine, VictoryChart, VictoryTheme, VictoryGroup } from "victory-native";
+import { VictoryLine, VictoryGroup } from "victory-native";
+import axios from "axios";
 
 const ModifyDataBuffer = (buffer, newData) => {
   buffer.shift(); // get rid of the oldest data in the array
@@ -9,37 +10,38 @@ const ModifyDataBuffer = (buffer, newData) => {
   return buffer;
 }
 
-export default function App() {
-  const [data, setData] = useState({x:0, y:0, z:0});
-  const [dataBuffer, setDataBuffer] = useState(Array(120).fill(1));
-  const [a, setA] = useState(0);
-  const [seconds, setSeconds] = useState(0);
+const SendDataBufferToDatabase = async (buffer, destination) => {
+  var payload = {
+    name:'Austin',
+    data: buffer
+  };
+  axios.post(destination, payload)
+}
 
-  useEffect(() => { _subscribe(); }, []);
+export default function App() {
+  const [dataBuffer, setDataBuffer] = useState(Array(120).fill(1));
+  const [totalAcceleration, setTotalAcceleration] = useState(0);
+
   useEffect(() => {
-    const timer = setInterval(() => { setSeconds(seconds => seconds + 1); }, 1000);
+    // send the current buffer to the database every 30 seconds
+    const timer = setInterval(() => { SendDataBufferToDatabase(dataBuffer, 'someConnectionString'); }, 30000);
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => { _subscribe(); }, []);
+
   const _subscribe = () => {
     this._subscription = Accelerometer.addListener(accelerometerData => {
-      setData(accelerometerData);
       let { x, y, z } = accelerometerData;
-      let b = Math.sqrt((x*x)+(y*y)+(z*z));
-      setA(b);   
-      setDataBuffer(ModifyDataBuffer(dataBuffer, b));
+      let totalG = Math.sqrt((x*x)+(y*y)+(z*z));
+      setTotalAcceleration(totalG);   
+      setDataBuffer(ModifyDataBuffer(dataBuffer, totalG));
     });
   };
-  
-  let { x, y, z } = data;
-  x = Math.round(x * 100) / 100;
-  y = Math.round(y * 100) / 100;
-  z = Math.round(z * 100) / 100;
 
   return (
     <View style={styles.container}>
-      <Text style={{fontSize: 40}}>{seconds}</Text>
-      <Text style={{fontSize: 40}}>{(a-1).toFixed(2)}</Text>
+      <Text style={{fontSize: 40}}>{(totalAcceleration-1).toFixed(2)}</Text>
       <Text style={{fontSize: 30}}>acceleration (g)</Text>
       <VictoryGroup>
         <VictoryLine data={dataBuffer}/>
