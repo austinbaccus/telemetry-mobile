@@ -9,50 +9,17 @@ const ModifyDataBuffer = (buffer, newData) => {
   return buffer;
 }
 
-const mongoose = require('mongoose');
-var client = mongoose.connect(
-  'mongodb://dbadmin:jenkins123@jenkins-database-sandbox.cluster-cvt6y767htpf.us-east-1.docdb.amazonaws.com:27031/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false',
-  {
-    tlsCAFile: `rds-combined-ca-bundle.pem` // Specify the DocDB; cert
-  },
-  function(err, client) {
-    if (err) throw err;
-
-    // Specify the database to be used
-    db = client.db('sample-database');
-
-    // Specify the collection to be used
-    col = db.collection('sample-collection');
-
-    // Insert a single document
-    col.insertOne({'hello':'Amazon DocumentDB'}, function(err, result){
-      //Find the document that was previously written
-      col.findOne({'hello':'DocDB;'}, function(err, result){
-        //Print the result to the screen
-        console.log(result);
-
-        //Close the connection
-        client.close()
-      });
-    });
-});
-
 export default function App() {
   const [data, setData] = useState({x:0, y:0, z:0});
   const [dataBuffer, setDataBuffer] = useState(Array(120).fill(1));
   const [a, setA] = useState(0);
-  const [count, setCount] = useState(0);
-
-  function counter() {
-    const incrementClock = () => {
-      setCount(count+3);
-    };
-    setInterval(incrementClock, 1000);
-    incrementClock();
-  }
+  const [seconds, setSeconds] = useState(0);
 
   useEffect(() => { _subscribe(); }, []);
-  useEffect(() => { counter(); }, []);
+  useEffect(() => {
+    const timer = setInterval(() => { setSeconds(seconds => seconds + 1); }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const _subscribe = () => {
     this._subscription = Accelerometer.addListener(accelerometerData => {
@@ -71,7 +38,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={{fontSize: 40}}>{count}</Text>
+      <Text style={{fontSize: 40}}>{seconds}</Text>
       <Text style={{fontSize: 40}}>{(a-1).toFixed(2)}</Text>
       <Text style={{fontSize: 30}}>acceleration (g)</Text>
       <VictoryGroup>
